@@ -1,7 +1,10 @@
 import { supabase } from "./supabase";
 
-export async function getProblems() {
-  const { data: problems, error } = await supabase.from("problems").select("*");
+export async function getProblems(ownerID: number) {
+  const { data: problems, error } = await supabase
+    .from("problems")
+    .select("*")
+    .contains("ownerID", [ownerID]);
 
   if (error) {
     console.error(error);
@@ -10,11 +13,12 @@ export async function getProblems() {
   return problems;
 }
 
-export async function getProblem(subjectID: number) {
+export async function getProblem(subjectID: number, ownerID: number) {
   const { data, error } = await supabase
     .from("problems")
     .select("*")
-    .eq("subjectID", subjectID);
+    .eq("subjectID", subjectID)
+    .contains("ownerID", [ownerID]);
 
   if (error) {
     console.error(error);
@@ -23,11 +27,12 @@ export async function getProblem(subjectID: number) {
   return data;
 }
 
-export async function getProblemCount(subjectID: number) {
+export async function getProblemCount(subjectID: number, ownerID: number) {
   const { data, error } = await supabase
     .from("problems")
     .select("*")
-    .eq("subjectID", subjectID);
+    .eq("subjectID", subjectID)
+    .contains("ownerID", [ownerID]);
 
   if (error) {
     console.error(error);
