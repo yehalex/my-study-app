@@ -3,6 +3,8 @@ import { getProblem } from "@/app/_lib/data-service";
 
 import { QuestionProps } from "@/types/Question";
 
+export const revalidate = 0; // Always revalidate
+
 export default async function ProblemDetailsPage({
   params,
 }: {

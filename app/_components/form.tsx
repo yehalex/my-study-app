@@ -1,50 +1,89 @@
 "use client";
 
 import { FormContentProps } from "@/types/FormContent";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createProblem } from "../_lib/actions";
 
-export default function Form({ content }: { content: FormContentProps }) {
-  //   console.log(content);
-
+export default function Form(
+  // { content }: { content: FormContentProps },
+  { subjects }: any
+) {
   const [options, setOptions] = useState<{ [key: number]: string }>({ 1: "" });
+  const formRef = useRef<HTMLFormElement>(null);
 
   const addOption = () => {
     const newKey = Object.keys(options).length + 1;
     setOptions({ ...options, [newKey]: "" });
-    console.log(options);
   };
 
   const removeOption = (keyToRemove: number) => {
     if (Object.keys(options).length > 1) {
-      const newOptions = Object.entries(options).reduce(
-        (acc, [key, value], index) => {
-          if (Number(key) !== keyToRemove) {
-            acc[index + 1] = value;
-          }
+      const newOptions = Object.entries(options)
+        .filter(([key]) => Number(key) !== keyToRemove)
+        .reduce((acc, [_, value], index) => {
+          acc[index + 1] = value;
           return acc;
-        },
-        {} as { [key: number]: string }
-      );
+        }, {} as { [key: number]: string });
 
       setOptions(newOptions);
     }
   };
 
+  const handleSubmit = async (formData: FormData) => {
+    const questionProps = {
+      question: formData.get("question") as string,
+      options: {} as { [key: number]: string },
+      answer: parseInt(formData.get("answer") as string, 10),
+      subjectID: parseInt(formData.get("subjectID") as string, 10),
+    };
+
+    Array.from(formData.keys()).forEach((key) => {
+      if (key.startsWith("option")) {
+        const value = formData.get(key) as string;
+        if (value) {
+          const optionNumber = parseInt(key.replace("option", ""), 10);
+          questionProps.options[optionNumber] = value;
+        }
+      }
+    });
+
+    if (
+      !questionProps.question ||
+      Object.keys(questionProps.options).length === 0 ||
+      isNaN(questionProps.answer) ||
+      isNaN(questionProps.subjectID)
+    ) {
+      console.error("Invalid form data");
+      // Handle error (e.g., show error message to user)
+      return;
+    }
+
+    const result = await createProblem(questionProps);
+    if (result.success) {
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+      setOptions({ 1: "" });
+    } else {
+      console.error("Failed to create question");
+    }
+  };
+
   return (
-    <div className="flex justify-center">
+    <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <form
-        action={createProblem}
-        className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg"
+        ref={formRef}
+        action={handleSubmit}
+        className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-lg"
       >
-        <h2 className="text-2xl font-bold mb-6 text-center text-indigo-600">
+        <h2 className="text-2xl font-bold mb-6 text-center text-indigo-400">
           Create New Question
         </h2>
 
         <div className="mb-4">
           <label
             htmlFor="question"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-300 mb-1"
           >
             Question
           </label>
@@ -53,14 +92,14 @@ export default function Form({ content }: { content: FormContentProps }) {
             id="question"
             name="question"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
         <div className="mb-4">
           <label
             htmlFor="subjectID"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-300 mb-1"
           >
             Subject
           </label>
@@ -68,18 +107,18 @@ export default function Form({ content }: { content: FormContentProps }) {
             id="subjectID"
             name="subjectID"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            {[1, 2, 3, 4].map((num) => (
-              <option key={num} value={num}>
-                Subject {num}
+            {subjects.map((subject: { id: number; subject: string }) => (
+              <option key={subject.id} value={subject.id}>
+                {subject.subject}
               </option>
             ))}
           </select>
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-300 mb-1">
             Options
           </label>
           {Object.entries(options).map(([key, value]) => (
@@ -91,14 +130,14 @@ export default function Form({ content }: { content: FormContentProps }) {
                 onChange={(e) =>
                   setOptions({ ...options, [key]: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-grow px-3 py-2 bg-gray-700 border border-gray-600 rounded-l-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder={`Option ${key}`}
                 required
               />
               <button
                 type="button"
                 onClick={() => removeOption(Number(key))}
-                className="px-3 py-2 bg-red-500 text-white rounded-r-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                className="px-3 py-2 bg-red-600 text-white rounded-r-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800"
               >
                 &times;
               </button>
@@ -107,7 +146,7 @@ export default function Form({ content }: { content: FormContentProps }) {
           <button
             type="button"
             onClick={addOption}
-            className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
           >
             Add Option
           </button>
@@ -116,7 +155,7 @@ export default function Form({ content }: { content: FormContentProps }) {
         <div className="mb-6">
           <label
             htmlFor="answer"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-300 mb-1"
           >
             Correct Answer
           </label>
@@ -124,7 +163,7 @@ export default function Form({ content }: { content: FormContentProps }) {
             id="answer"
             name="answer"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {Object.keys(options).map((key) => (
               <option key={key} value={key}>
@@ -136,7 +175,7 @@ export default function Form({ content }: { content: FormContentProps }) {
 
         <button
           type="submit"
-          className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
         >
           Create Question
         </button>

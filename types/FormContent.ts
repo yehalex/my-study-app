@@ -7,7 +7,7 @@ export interface FormContentProps {
   };
   answer?: number;
   subjectID?: number;
-  onwerID?: number[];
+  ownerID?: number[];
   selectedAnswer?: string | null;
   front?: string;
   back?: string;

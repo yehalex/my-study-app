@@ -7,6 +7,6 @@ export interface QuestionProps {
   };
   answer: number;
   subjectID: number;
-  onwerID: number[];
+  ownerID: number[];
   selectedAnswer?: string | null;
 }
