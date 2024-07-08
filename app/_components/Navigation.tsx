@@ -11,14 +11,14 @@ export default async function Navigation() {
   return (
     <nav className="z-10">
       <ul className="flex gap-16 items-center">
-        <li>
+        {/* <li>
           <Link
             href="/flashcards"
             className="hover:text-gray-400 transition-colors"
           >
             Study
           </Link>
-        </li>
+        </li> */}
         <li>
           <Link
             href="/problems"
