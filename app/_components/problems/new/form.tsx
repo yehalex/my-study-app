@@ -2,7 +2,7 @@
 
 import { FormContentProps } from "@/types/FormContent";
 import { useState, useRef } from "react";
-import { createProblem } from "../_lib/actions";
+import { createProblem } from "../../../_lib/actions";
 
 export default function Form(
   // { content }: { content: FormContentProps },
@@ -26,6 +26,8 @@ export default function Form(
         }, {} as { [key: number]: string });
 
       setOptions(newOptions);
+    } else if (Object.keys(options).length === 1) {
+      setOptions({ 1: "" });
     }
   };
 
@@ -66,6 +68,57 @@ export default function Form(
       setOptions({ 1: "" });
     } else {
       console.error("Failed to create question");
+    }
+  };
+
+  const handleOptionsPaste = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.target.value;
+    const lines = pastedText.split("\n");
+
+    const parsedOptions: { [key: number]: string } = {};
+    let optionIndex = 1;
+    let currentOption = "";
+    let currentLetter = "";
+
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      if (trimmedLine) {
+        const match = trimmedLine.match(
+          /^(?:(?:\()?([A-E\d])(?:\)|\.)?|[A-E\d][\s.)-]*)(.*)$/
+        );
+        if (match) {
+          // If we have a previous option, save it
+          if (currentOption) {
+            parsedOptions[optionIndex] = currentOption.trim();
+            optionIndex++;
+          }
+          currentLetter = match[1];
+          currentOption = match[2].trim();
+        } else if (currentOption) {
+          // If we're in the middle of an option, append this line
+          currentOption += " " + trimmedLine;
+        } else {
+          // If no match and no current option, treat the whole line as an option
+          currentOption = trimmedLine;
+        }
+      }
+
+      // If this is the last line or the next line starts a new option, save the current option
+      if (
+        index === lines.length - 1 ||
+        (index < lines.length - 1 &&
+          lines[index + 1].trim().match(/^(?:\()?[A-E\d](?:\)|\.)?/))
+      ) {
+        if (currentOption) {
+          parsedOptions[optionIndex] = currentOption.trim();
+          optionIndex++;
+          currentOption = "";
+        }
+      }
+    });
+
+    if (Object.keys(parsedOptions).length > 0) {
+      setOptions(parsedOptions);
     }
   };
 
@@ -115,6 +168,18 @@ export default function Form(
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Paste Options
+          </label>
+          <textarea
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            rows={2}
+            placeholder="Paste your options here..."
+            onChange={handleOptionsPaste}
+          ></textarea>
         </div>
 
         <div className="mb-4">
