@@ -1,15 +1,22 @@
 "use client";
 
-import { FormContentProps } from "@/types/FormContent";
 import { useState, useRef } from "react";
 import { createProblem } from "../../../_lib/actions";
+import ImageToTextForm from "./ImageToTextForm";
 
-export default function Form(
-  // { content }: { content: FormContentProps },
-  { subjects }: any
-) {
+export default function Form({ subjects }: any) {
   const [options, setOptions] = useState<{ [key: number]: string }>({ 1: "" });
+  const [question, setQuestion] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+
+  const handleParsedData = (data: { question: string; options: string[] }) => {
+    setQuestion(data.question);
+    const newOptions = data.options.reduce((acc, option, index) => {
+      acc[index + 1] = option;
+      return acc;
+    }, {} as { [key: number]: string });
+    setOptions(newOptions);
+  };
 
   const addOption = () => {
     const newKey = Object.keys(options).length + 1;
@@ -77,43 +84,22 @@ export default function Form(
 
     const parsedOptions: { [key: number]: string } = {};
     let optionIndex = 1;
-    let currentOption = "";
-    let currentLetter = "";
 
-    lines.forEach((line, index) => {
+    lines.forEach((line) => {
       const trimmedLine = line.trim();
       if (trimmedLine) {
+        // Check if the line starts with a letter/number prefix
         const match = trimmedLine.match(
           /^(?:(?:\()?([A-E\d])(?:\)|\.)?|[A-E\d][\s.)-]*)(.*)$/
         );
         if (match) {
-          // If we have a previous option, save it
-          if (currentOption) {
-            parsedOptions[optionIndex] = currentOption.trim();
-            optionIndex++;
-          }
-          currentLetter = match[1];
-          currentOption = match[2].trim();
-        } else if (currentOption) {
-          // If we're in the middle of an option, append this line
-          currentOption += " " + trimmedLine;
+          // If there's a prefix, use the content after it
+          parsedOptions[optionIndex] = match[2].trim();
         } else {
-          // If no match and no current option, treat the whole line as an option
-          currentOption = trimmedLine;
+          // If there's no prefix, use the whole line
+          parsedOptions[optionIndex] = trimmedLine;
         }
-      }
-
-      // If this is the last line or the next line starts a new option, save the current option
-      if (
-        index === lines.length - 1 ||
-        (index < lines.length - 1 &&
-          lines[index + 1].trim().match(/^(?:\()?[A-E\d](?:\)|\.)?/))
-      ) {
-        if (currentOption) {
-          parsedOptions[optionIndex] = currentOption.trim();
-          optionIndex++;
-          currentOption = "";
-        }
+        optionIndex++;
       }
     });
 
@@ -134,6 +120,10 @@ export default function Form(
         </h2>
 
         <div className="mb-4">
+          <ImageToTextForm onParsedData={handleParsedData} />
+        </div>
+
+        <div className="mb-4">
           <label
             htmlFor="question"
             className="block text-sm font-medium text-gray-300 mb-1"
@@ -144,6 +134,8 @@ export default function Form(
             type="text"
             id="question"
             name="question"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
             required
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
