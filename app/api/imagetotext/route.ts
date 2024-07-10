@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { imageToText, TextElement } from "@/app/_lib/imageToText";
 import { parseQuestionFromOCR } from "@/app/_lib/parseQuestionFromOCR";
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+export const dynamic = "force-dynamic";
+export const runtime = "edge"; // Use this using edge runtime
 
 export async function POST(req: NextRequest) {
   try {
