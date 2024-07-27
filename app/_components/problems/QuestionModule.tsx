@@ -87,32 +87,32 @@ export default function QuestionModule({
       )}
 
       {/* Navigation  */}
-      {hasAnswered && (
-        <div className="flex justify-between w-full mt-5 px-0">
+      {/* {hasAnswered && ( */}
+      <div className="flex justify-between w-full mt-5 px-0">
+        <button
+          onClick={handlePrevious}
+          disabled={questionIndex === 0}
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400 transition-colors duration-200"
+        >
+          <ChevronLeftIcon className="h-6 w-6" />
+        </button>
+        {totalAnswered === questionArray.length && (
           <button
-            onClick={handlePrevious}
-            disabled={questionIndex === 0}
-            className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400 transition-colors duration-200"
+            onClick={handleRetry}
+            className="px-4 py-2 text-white rounded disabled:bg-gray-400 transition-colors duration-200"
           >
-            <ChevronLeftIcon className="h-6 w-6" />
+            <ArrowPathIcon className="h-6 w-6" /> Redo
           </button>
-          {totalAnswered === questionArray.length && (
-            <button
-              onClick={handleRetry}
-              className="px-4 py-2 text-white rounded disabled:bg-gray-400 transition-colors duration-200"
-            >
-              <ArrowPathIcon className="h-6 w-6" /> Redo
-            </button>
-          )}
-          <button
-            onClick={handleNext}
-            disabled={questionIndex === questionArray.length - 1}
-            className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400 transition-colors duration-200"
-          >
-            <ChevronRightIcon className="h-6 w-6" />
-          </button>
-        </div>
-      )}
+        )}
+        <button
+          onClick={handleNext}
+          disabled={questionIndex === questionArray.length - 1}
+          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400 transition-colors duration-200"
+        >
+          <ChevronRightIcon className="h-6 w-6" />
+        </button>
+      </div>
+      {/* )} */}
     </div>
   );
 }

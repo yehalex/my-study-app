@@ -55,7 +55,10 @@ export async function insertProblem(newProblem: {}) {
 }
 
 export async function getSubjects() {
-  let { data: subjects, error } = await supabase.from("subjects").select("*");
+  let { data: subjects, error } = await supabase
+    .from("subjects")
+    .select("*")
+    .order("subject", { ascending: true });
 
   if (error) {
     console.error(error);
