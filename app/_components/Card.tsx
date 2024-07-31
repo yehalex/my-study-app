@@ -3,7 +3,7 @@
 import React, { useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
-interface FlipCardProps {
+interface CardProps {
   children: ReactNode | [ReactNode, ReactNode];
   isFlippable?: boolean;
   initialFlipped?: boolean;
@@ -11,7 +11,7 @@ interface FlipCardProps {
   href?: string;
 }
 
-const Card: React.FC<FlipCardProps> = ({
+const Card: React.FC<CardProps> = ({
   children,
   isFlippable = false,
   initialFlipped = false,
@@ -19,14 +19,13 @@ const Card: React.FC<FlipCardProps> = ({
   href = "",
 }) => {
   const [flipped, setFlipped] = useState(initialFlipped);
+  const router = useRouter();
 
   const childrenArray = React.Children.toArray(children);
   const frontContent = childrenArray[0];
   const backContent = isFlippable ? childrenArray[1] : null;
 
-  const router = useRouter();
-
-  const handleClick = (e: any) => {
+  const handleClick = (e: React.MouseEvent) => {
     if (isFlippable) {
       setFlipped(!flipped);
     } else if (hasRoute) {
@@ -37,24 +36,22 @@ const Card: React.FC<FlipCardProps> = ({
 
   return (
     <div
-      className="relative min-w-[350px] w-full xl:max-w-[400px] h-40 [perspective:1000px] cursor-pointer "
+      className="relative w-full h-40 perspective-1000 cursor-pointer"
       onClick={handleClick}
     >
       <div
-        className={`relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] ${
-          flipped ? "[transform:rotateY(180deg)]" : ""
+        className={`relative w-full h-full transition-transform duration-500 transform-style-3d ${
+          flipped ? "rotate-y-180" : ""
         }`}
       >
         <div className="absolute inset-0 w-full h-full backface-hidden">
-          <div className={`w-full h-full ${flipped ? "invisible" : "visible"}`}>
-            {frontContent}
-          </div>
+          {frontContent}
         </div>
-        <div className="absolute inset-0 w-full h-full [transform:rotateY(180deg)] backface-hidden">
-          <div className={`w-full h-full ${flipped ? "visible" : "invisible"}`}>
+        {isFlippable && (
+          <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180">
             {backContent}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

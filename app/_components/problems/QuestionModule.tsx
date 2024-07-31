@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Question from "./Question";
 import { QuestionProps } from "@/types/Question";
 import {
@@ -32,17 +32,33 @@ export default function QuestionModule({
     if (answeredCorrectly) setTotalCorrect(totalCorrect + 1);
   };
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (questionIndex < questionArray.length - 1) {
       setQuestionIndex(questionIndex + 1);
     }
-  };
+  }, [questionIndex, questionArray.length]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (questionIndex > 0) {
       setQuestionIndex(questionIndex - 1);
     }
-  };
+  }, [questionIndex]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") {
+        handlePrevious();
+      } else if (event.key === "ArrowRight") {
+        handleNext();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handlePrevious, handleNext]);
 
   const handleRetry = () => {
     const newQuestions = questionArray.map((question) => ({
