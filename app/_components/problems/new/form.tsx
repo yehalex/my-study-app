@@ -7,6 +7,9 @@ import ImageToTextForm from "./ImageToTextForm";
 export default function Form({ subjects }: any) {
   const [options, setOptions] = useState<{ [key: number]: string }>({ 1: "" });
   const [question, setQuestion] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<number>(
+    subjects[0]?.id || 0
+  );
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleParsedData = (data: { question: string; options: string[] }) => {
@@ -71,8 +74,15 @@ export default function Form({ subjects }: any) {
     if (result.success) {
       if (formRef.current) {
         formRef.current.reset();
+        const subjectInput = formRef.current.elements.namedItem(
+          "subjectID"
+        ) as HTMLSelectElement;
+        if (subjectInput) {
+          subjectInput.value = selectedSubject.toString();
+        }
       }
       setOptions({ 1: "" });
+      setQuestion("");
     } else {
       console.error("Failed to create question");
     }
@@ -152,6 +162,8 @@ export default function Form({ subjects }: any) {
             id="subjectID"
             name="subjectID"
             required
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(Number(e.target.value))}
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {subjects.map((subject: { id: number; subject: string }) => (
