@@ -10,6 +10,7 @@ export default function Form({ subjects }: any) {
   const [selectedSubject, setSelectedSubject] = useState<number>(
     subjects[0]?.id || 0
   );
+  const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]); // Store selected answers
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleParsedData = (data: { question: string; options: string[] }) => {
@@ -36,8 +37,12 @@ export default function Form({ subjects }: any) {
         }, {} as { [key: number]: string });
 
       setOptions(newOptions);
+      setSelectedAnswers(
+        selectedAnswers.filter((answer) => answer !== keyToRemove)
+      );
     } else if (Object.keys(options).length === 1) {
       setOptions({ 1: "" });
+      setSelectedAnswers([]);
     }
   };
 
@@ -45,7 +50,7 @@ export default function Form({ subjects }: any) {
     const questionProps = {
       question: formData.get("question") as string,
       options: {} as { [key: number]: string },
-      answer: parseInt(formData.get("answer") as string, 10),
+      answer: selectedAnswers, // Use the array of selected answers
       subjectID: parseInt(formData.get("subjectID") as string, 10),
     };
 
@@ -62,11 +67,10 @@ export default function Form({ subjects }: any) {
     if (
       !questionProps.question ||
       Object.keys(questionProps.options).length === 0 ||
-      isNaN(questionProps.answer) ||
+      questionProps.answer.length === 0 || // Ensure there's at least one correct answer
       isNaN(questionProps.subjectID)
     ) {
       console.error("Invalid form data");
-      // Handle error (e.g., show error message to user)
       return;
     }
 
@@ -83,6 +87,7 @@ export default function Form({ subjects }: any) {
       }
       setOptions({ 1: "" });
       setQuestion("");
+      setSelectedAnswers([]); // Reset selected answers
     } else {
       console.error("Failed to create question");
     }
@@ -98,15 +103,12 @@ export default function Form({ subjects }: any) {
     lines.forEach((line) => {
       const trimmedLine = line.trim();
       if (trimmedLine) {
-        // Check if the line starts with a letter/number prefix
         const match = trimmedLine.match(
           /^(?:(?:\()?([A-E\d])(?:\)|\.)?|[A-E\d][\s.)-]*)(.*)$/
         );
         if (match) {
-          // If there's a prefix, use the content after it
           parsedOptions[optionIndex] = match[2].trim();
         } else {
-          // If there's no prefix, use the whole line
           parsedOptions[optionIndex] = trimmedLine;
         }
         optionIndex++;
@@ -116,6 +118,14 @@ export default function Form({ subjects }: any) {
     if (Object.keys(parsedOptions).length > 0) {
       setOptions(parsedOptions);
     }
+  };
+
+  const toggleSelectedAnswer = (optionKey: number) => {
+    setSelectedAnswers((prev) =>
+      prev.includes(optionKey)
+        ? prev.filter((key) => key !== optionKey)
+        : [...prev, optionKey]
+    );
   };
 
   return (
@@ -191,7 +201,7 @@ export default function Form({ subjects }: any) {
             Options
           </label>
           {Object.entries(options).map(([key, value]) => (
-            <div key={key} className="flex mb-2">
+            <div key={key} className="flex items-center mb-2">
               <input
                 type="text"
                 name={`option${key}`}
@@ -210,6 +220,19 @@ export default function Form({ subjects }: any) {
               >
                 &times;
               </button>
+              <input
+                type="checkbox"
+                id={`correctAnswer${key}`}
+                checked={selectedAnswers.includes(Number(key))}
+                onChange={() => toggleSelectedAnswer(Number(key))}
+                className="ml-2"
+              />
+              <label
+                htmlFor={`correctAnswer${key}`}
+                className="ml-1 text-sm text-gray-300"
+              >
+                Correct
+              </label>
             </div>
           ))}
           <button
@@ -219,27 +242,6 @@ export default function Form({ subjects }: any) {
           >
             Add Option
           </button>
-        </div>
-
-        <div className="mb-6">
-          <label
-            htmlFor="answer"
-            className="block text-sm font-medium text-gray-300 mb-1"
-          >
-            Correct Answer
-          </label>
-          <select
-            id="answer"
-            name="answer"
-            required
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {Object.keys(options).map((key) => (
-              <option key={key} value={key}>
-                Option {key}
-              </option>
-            ))}
-          </select>
         </div>
 
         <button

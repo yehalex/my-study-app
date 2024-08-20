@@ -5,7 +5,7 @@ export interface QuestionProps {
   options: {
     [key: number]: string;
   };
-  answer: number;
+  answer: number[];
   subjectID: number;
   ownerID: number[];
   selectedAnswer?: string | null;

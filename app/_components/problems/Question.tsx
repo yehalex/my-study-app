@@ -8,16 +8,12 @@ export default function Question({
   question: QuestionProps;
   onAnswer: (answeredCorrectly: boolean) => void;
 }) {
-  // const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-
-  // useEffect(() => {
-  //   setSelectedAnswer(null);
-  // }, [question]);
-
   const handleClicked = (optionNumber: string) => {
     if (question.selectedAnswer === null) {
       question.selectedAnswer = optionNumber;
-      const answeredCorrectly = optionNumber === question.answer.toString();
+      const answeredCorrectly = question.answer.includes(
+        parseInt(optionNumber)
+      );
       onAnswer(answeredCorrectly);
     }
   };
@@ -25,7 +21,7 @@ export default function Question({
   const getButtonColor = (key: string) => {
     if (question.selectedAnswer === null)
       return "bg-gray-700 hover:bg-gray-600";
-    if (key === question.answer.toString()) return "bg-teal-500";
+    if (question.answer.includes(parseInt(key))) return "bg-teal-500";
     if (key === question.selectedAnswer) return "bg-red-500";
     return "bg-gray-700";
   };
