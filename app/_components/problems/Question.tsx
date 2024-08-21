@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from "react";
 import { QuestionProps } from "@/types/Question";
 
@@ -8,14 +10,6 @@ export default function Question({
   question: QuestionProps;
   onAnswer: (answeredCorrectly: boolean) => void;
 }) {
-  const handleClicked = (optionNumber: string) => {
-    if (question.selectedAnswer === null) {
-      question.selectedAnswer = optionNumber;
-      const answeredCorrectly = question.answer.includes(Number(optionNumber));
-      onAnswer(answeredCorrectly);
-    }
-  };
-
   const getButtonColor = (key: string) => {
     if (question.selectedAnswer === null)
       return "bg-gray-700 hover:bg-gray-600";
@@ -25,6 +19,16 @@ export default function Question({
   };
 
   useEffect(() => {
+    const handleClicked = (optionNumber: string) => {
+      if (question.selectedAnswer === null) {
+        question.selectedAnswer = optionNumber;
+        const answeredCorrectly = question.answer.includes(
+          Number(optionNumber)
+        );
+        onAnswer(answeredCorrectly);
+      }
+    };
+
     const handleKeyPress = (event: KeyboardEvent) => {
       const key = event.key;
       const optionNumber = parseInt(key, 10);
@@ -40,7 +44,7 @@ export default function Question({
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [handleClicked, question]);
+  }, [question, onAnswer]);
 
   return (
     <div>
@@ -55,7 +59,13 @@ export default function Question({
             className={`w-full py-3 px-4 text-white text-left rounded-lg transition duration-200 ${getButtonColor(
               key
             )}`}
-            onClick={() => handleClicked(key)}
+            onClick={() => {
+              if (question.selectedAnswer === null) {
+                question.selectedAnswer = key;
+                const answeredCorrectly = question.answer.includes(Number(key));
+                onAnswer(answeredCorrectly);
+              }
+            }}
             disabled={question.selectedAnswer !== null}
           >
             {value}
