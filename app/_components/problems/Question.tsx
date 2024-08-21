@@ -40,7 +40,7 @@ export default function Question({
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [question]);
+  }, [handleClicked, question]);
 
   return (
     <div>
