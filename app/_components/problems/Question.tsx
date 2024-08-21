@@ -1,5 +1,5 @@
+import { useEffect } from "react";
 import { QuestionProps } from "@/types/Question";
-import { useEffect, useState } from "react";
 
 export default function Question({
   question,
@@ -11,9 +11,7 @@ export default function Question({
   const handleClicked = (optionNumber: string) => {
     if (question.selectedAnswer === null) {
       question.selectedAnswer = optionNumber;
-      const answeredCorrectly = question.answer.includes(
-        parseInt(optionNumber)
-      );
+      const answeredCorrectly = question.answer.includes(Number(optionNumber));
       onAnswer(answeredCorrectly);
     }
   };
@@ -21,10 +19,28 @@ export default function Question({
   const getButtonColor = (key: string) => {
     if (question.selectedAnswer === null)
       return "bg-gray-700 hover:bg-gray-600";
-    if (question.answer.includes(parseInt(key))) return "bg-teal-500";
+    if (question.answer.includes(Number(key))) return "bg-teal-500";
     if (key === question.selectedAnswer) return "bg-red-500";
     return "bg-gray-700";
   };
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      const key = event.key;
+      const optionNumber = parseInt(key, 10);
+
+      // Check if the key corresponds to one of the options
+      if (optionNumber && question.options[optionNumber]) {
+        handleClicked(optionNumber.toString());
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [question]);
 
   return (
     <div>
