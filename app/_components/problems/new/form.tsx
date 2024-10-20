@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { createProblem } from "../../../_lib/actions";
 import ImageToTextForm from "./ImageToTextForm";
+import { CheckIcon } from "@heroicons/react/24/solid";
 
 export default function Form({ subjects }: any) {
   const [options, setOptions] = useState<{ [key: number]: string }>({ 1: "" });
@@ -220,19 +221,27 @@ export default function Form({ subjects }: any) {
               >
                 &times;
               </button>
-              <input
-                type="checkbox"
-                id={`correctAnswer${key}`}
-                checked={selectedAnswers.includes(Number(key))}
-                onChange={() => toggleSelectedAnswer(Number(key))}
-                className="ml-2"
-              />
-              <label
-                htmlFor={`correctAnswer${key}`}
-                className="ml-1 text-sm text-gray-300"
-              >
-                Correct
-              </label>
+              <div className="inline-flex items-center ml-2">
+                <input
+                  type="checkbox"
+                  id={`correctAnswer${key}`}
+                  checked={selectedAnswers.includes(Number(key))}
+                  onChange={() => toggleSelectedAnswer(Number(key))}
+                  className="hidden"
+                />
+                <label
+                  htmlFor={`correctAnswer${key}`}
+                  className={`flex items-center justify-center w-5 h-5 border rounded cursor-pointer transition-colors duration-200 ease-in-out ${
+                    selectedAnswers.includes(Number(key))
+                      ? "bg-blue-500 border-blue-500"
+                      : "bg-gray-700 border-gray-600"
+                  }`}
+                >
+                  {selectedAnswers.includes(Number(key)) && (
+                    <CheckIcon className="w-4 h-4 text-white" />
+                  )}
+                </label>
+              </div>
             </div>
           ))}
           <button

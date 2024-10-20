@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { QuestionProps } from "@/types/Question";
 
 export async function getProblems(ownerID: number) {
   const { data: problems, error } = await supabase
@@ -86,6 +87,31 @@ export async function createUser(newUser: any) {
   if (error) {
     console.error(error);
     throw new Error("User cannot be created");
+  }
+
+  return data;
+}
+
+export async function updateProblemInDB(problem: QuestionProps) {
+  const { data, error } = await supabase
+    .from("problems")
+    .update(problem)
+    .eq("id", problem.id);
+
+  if (error) {
+    console.error(error);
+    throw new Error("Problem cannot be updated");
+  }
+
+  return data;
+}
+
+export async function deleteProblemFromDB(id: number) {
+  const { data, error } = await supabase.from("problems").delete().eq("id", id);
+
+  if (error) {
+    console.error(error);
+    throw new Error("Problem cannot be deleted");
   }
 
   return data;

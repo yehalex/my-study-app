@@ -1,9 +1,15 @@
 "use server";
 
 import { FormContentProps } from "@/types/FormContent";
+import { QuestionProps } from "@/types/Question";
 
 import { auth, signIn, signOut } from "./auth";
-import { getUser, insertProblem } from "./data-service";
+import {
+  getUser,
+  insertProblem,
+  updateProblemInDB,
+  deleteProblemFromDB,
+} from "./data-service";
 import { revalidatePath } from "next/cache";
 
 export async function signInAction() {
@@ -25,5 +31,17 @@ export async function createProblem(formData: FormContentProps) {
   const result = await insertProblem(formData);
   revalidatePath("/problems");
   // add logic to handle failure
+  return { success: true };
+}
+
+export async function updateProblem(problem: QuestionProps) {
+  const result = await updateProblemInDB(problem);
+  revalidatePath("/problems/manage");
+  return { success: true };
+}
+
+export async function deleteProblem(id: number) {
+  const result = await deleteProblemFromDB(id);
+  revalidatePath("/problems/manage");
   return { success: true };
 }
