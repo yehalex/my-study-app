@@ -48,7 +48,7 @@ export default function Question({
 
   return (
     <div>
-      <h4 className="text-white text-xl font-semibold mb-4">
+      <h4 className="text-white text-xl font-semibold mb-4 whitespace-pre-wrap">
         {question.question}
       </h4>
 

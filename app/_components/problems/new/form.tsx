@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createProblem } from "../../../_lib/actions";
 import ImageToTextForm from "./ImageToTextForm";
 import { CheckIcon } from "@heroicons/react/24/solid";
@@ -13,6 +13,7 @@ export default function Form({ subjects }: any) {
   );
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]); // Store selected answers
   const formRef = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleParsedData = (data: { question: string; options: string[] }) => {
     setQuestion(data.question);
@@ -129,6 +130,12 @@ export default function Form({ subjects }: any) {
     );
   };
 
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.target;
+    target.style.height = "auto"; // Reset height to auto to shrink
+    target.style.height = `${target.scrollHeight}px`; // Set height to scrollHeight
+  };
+
   return (
     <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <form
@@ -151,14 +158,17 @@ export default function Form({ subjects }: any) {
           >
             Question
           </label>
-          <input
-            type="text"
+          <textarea
             id="question"
             name="question"
+            ref={textareaRef}
+            onInput={handleInput}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             required
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            rows={1}
+            style={{ overflow: "hidden" }}
           />
         </div>
 
