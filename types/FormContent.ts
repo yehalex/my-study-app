@@ -11,4 +11,5 @@ export interface FormContentProps {
   selectedAnswer?: string | null;
   front?: string;
   back?: string;
+  explanation?: string;
 }

@@ -9,4 +9,5 @@ export interface QuestionProps {
   subjectID: number;
   ownerID: number[];
   selectedAnswer?: string | null;
+  explanation?: string;
 }

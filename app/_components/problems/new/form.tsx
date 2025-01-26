@@ -52,8 +52,9 @@ export default function Form({ subjects }: any) {
     const questionProps = {
       question: formData.get("question") as string,
       options: {} as { [key: number]: string },
-      answer: selectedAnswers, // Use the array of selected answers
+      answer: selectedAnswers,
       subjectID: parseInt(formData.get("subjectID") as string, 10),
+      explanation: formData.get("explanation") as string,
     };
 
     Array.from(formData.keys()).forEach((key) => {
@@ -261,6 +262,22 @@ export default function Form({ subjects }: any) {
           >
             Add Option
           </button>
+        </div>
+
+        <div className="mb-4">
+          <label
+            htmlFor="explanation"
+            className="block text-sm font-medium text-gray-300 mb-1"
+          >
+            Explanation (Optional)
+          </label>
+          <textarea
+            id="explanation"
+            name="explanation"
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            rows={3}
+            placeholder="Add an explanation for this question..."
+          />
         </div>
 
         <button
