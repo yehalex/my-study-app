@@ -144,6 +144,18 @@ export default function ManageProblems({
                   </label>
                 </div>
               ))}
+              <textarea
+                value={editingProblem.explanation || ""}
+                onChange={(e) =>
+                  setEditingProblem({
+                    ...editingProblem,
+                    explanation: e.target.value,
+                  })
+                }
+                placeholder="Add an explanation (optional)"
+                className="w-full bg-gray-700 text-white p-2 rounded mt-2"
+                rows={3}
+              />
               <div>
                 <button
                   type="submit"
