@@ -8,7 +8,7 @@ export default function Question({
   onAnswer,
 }: {
   question: QuestionProps;
-  onAnswer: (answeredCorrectly: boolean) => void;
+  onAnswer: (answeredCorrectly: boolean, answer: string) => void;
 }) {
   const getButtonColor = (key: string) => {
     if (question.selectedAnswer === null)
@@ -25,7 +25,7 @@ export default function Question({
         const answeredCorrectly = question.answer.includes(
           Number(optionNumber)
         );
-        onAnswer(answeredCorrectly);
+        onAnswer(answeredCorrectly, optionNumber);
       }
     };
 
@@ -63,7 +63,7 @@ export default function Question({
               if (question.selectedAnswer === null) {
                 question.selectedAnswer = key;
                 const answeredCorrectly = question.answer.includes(Number(key));
-                onAnswer(answeredCorrectly);
+                onAnswer(answeredCorrectly, key);
               }
             }}
             disabled={question.selectedAnswer !== null}

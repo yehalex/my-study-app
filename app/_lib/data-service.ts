@@ -116,3 +116,51 @@ export async function deleteProblemFromDB(id: number) {
 
   return data;
 }
+
+export async function getQuestionProgress(userID: number, subjectID: number) {
+  const { data, error } = await supabase
+    .from("question_progress")
+    .select("*")
+    .eq("user_id", userID)
+    .eq("subject_id", subjectID);
+
+  if (error) {
+    console.error(error);
+    throw new Error("Question progress cannot be retrieved");
+  }
+
+  return data;
+}
+
+export async function initQuestionProgress(userID: number, subjectID: number) {
+  const { data, error } = await supabase
+    .from("question_progress")
+    .insert([{ user_id: userID, subject_id: subjectID, progress: {} }])
+    .select();
+
+  if (error) {
+    console.error(error);
+    throw new Error("Question progress cannot be initialized");
+  }
+
+  return data;
+}
+
+export async function updateQuestionProgress(
+  userID: number,
+  subjectID: number,
+  progress: object
+) {
+  const { data, error } = await supabase
+    .from("question_progress")
+    .update(progress)
+    .eq("user_id", userID)
+    .eq("subject_id", subjectID);
+
+  if (error) {
+    console.error(error);
+    throw new Error("Question progress cannot be updated");
+  }
+
+  return data;
+}
