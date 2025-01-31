@@ -1,100 +1,148 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import Question from "./Question";
+import ProgressBar from "./ProgressBar";
+import Button from "../Button";
 import { QuestionProps } from "@/types/Question";
+import { QuestionModuleProps } from "@/types/QuestionModule";
+import { updateProgress, resetProgress } from "@/app/_lib/actions";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/solid";
+import useKeyboardNavigation from "@/app/hooks/useKeyboardNavigation";
 
-export default function QuestionModule({
+const QuestionModule = ({
   questionArray,
-}: {
-  questionArray: QuestionProps[];
-}) {
+  userID,
+  subjectID,
+  progress,
+}: QuestionModuleProps) => {
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [totalAnswered, setTotalAnswered] = useState(0);
-  const [totalCorrect, setTotalCorrect] = useState(0);
   const [questions, setQuestions] = useState<QuestionProps[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const updateTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Derived state
+  const totalAnswered = useMemo(
+    () => questions.filter((q) => q.selectedAnswer !== null).length,
+    [questions]
+  );
+
+  const totalCorrect = useMemo(
+    () =>
+      questions.filter(
+        (q) =>
+          q.selectedAnswer !== null &&
+          q.answer.includes(Number(q.selectedAnswer))
+      ).length,
+    [questions]
+  );
 
   useEffect(() => {
     const newQuestions = questionArray.map((question) => ({
       ...question,
-      selectedAnswer: null,
+      selectedAnswer: progress?.progress?.[question.id] || null,
     }));
+
+    const firstUnansweredIndex = newQuestions.findIndex(
+      (q) => q.selectedAnswer === null
+    );
+
     setQuestions(newQuestions);
-  }, [questionArray]);
+    setQuestionIndex(firstUnansweredIndex === -1 ? 0 : firstUnansweredIndex);
+  }, [questionArray, progress]);
 
-  const handleAnswered = (answeredCorrectly: boolean) => {
-    setTotalAnswered(totalAnswered + 1);
-    if (answeredCorrectly) setTotalCorrect(totalCorrect + 1);
-  };
+  const handleAnswered = useCallback(
+    async (answeredCorrectly: boolean, answer: string) => {
+      const currentQuestion = questions[questionIndex];
+      const updatedQuestions = [...questions];
+      updatedQuestions[questionIndex] = {
+        ...currentQuestion,
+        selectedAnswer: answer,
+      };
+      setQuestions(updatedQuestions);
 
-  const handleNext = useCallback(() => {
-    if (questionIndex < questionArray.length - 1) {
-      setQuestionIndex(questionIndex + 1);
+      if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+
+      updateTimeoutRef.current = setTimeout(async () => {
+        try {
+          const result = await updateProgress(
+            userID,
+            subjectID,
+            currentQuestion.id,
+            answer
+          );
+
+          if (!result.success) throw new Error("Failed to update progress");
+        } catch (err) {
+          setError("Failed to save progress");
+          const rollbackQuestions = [...questions];
+          rollbackQuestions[questionIndex] = {
+            ...currentQuestion,
+            selectedAnswer: null,
+          };
+          setQuestions(rollbackQuestions);
+        }
+      }, 500);
+    },
+    [questionIndex, questions, subjectID, userID]
+  );
+
+  const handleNext = useCallback(
+    () =>
+      setQuestionIndex((prev) => Math.min(prev + 1, questionArray.length - 1)),
+    [questionArray.length]
+  );
+
+  const handlePrevious = useCallback(
+    () => setQuestionIndex((prev) => Math.max(prev - 1, 0)),
+    []
+  );
+
+  useKeyboardNavigation(handlePrevious, handleNext);
+
+  const handleRetry = async () => {
+    try {
+      const result = await resetProgress(userID, subjectID);
+      if (!result.success) throw new Error("Failed to reset progress");
+
+      setQuestions((prev) => prev.map((q) => ({ ...q, selectedAnswer: null })));
+      setQuestionIndex(0);
+      setError(null);
+    } catch (err) {
+      setError("Failed to reset progress");
     }
-  }, [questionIndex, questionArray.length]);
-
-  const handlePrevious = useCallback(() => {
-    if (questionIndex > 0) {
-      setQuestionIndex(questionIndex - 1);
-    }
-  }, [questionIndex]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "ArrowLeft") {
-        handlePrevious();
-      } else if (event.key === "ArrowRight") {
-        handleNext();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [handlePrevious, handleNext]);
-
-  const handleRetry = () => {
-    const newQuestions = questionArray.map((question) => ({
-      ...question,
-      selectedAnswer: null,
-    }));
-    setQuestions(newQuestions);
-    setQuestionIndex(0);
-    setTotalAnswered(0);
-    setTotalCorrect(0);
   };
 
   const progressPercentage = ((questionIndex + 1) / questionArray.length) * 100;
-  const hasAnswered = questions[questionIndex]?.selectedAnswer !== null;
+  const allAnswered = totalAnswered === questionArray.length;
 
   return (
     <div className="max-w-full xl:max-w-md mx-auto p-6 bg-gray-800 rounded-lg shadow-lg">
-      {/* Progress bar */}
       <div className="flex justify-between mb-3">
-        <p className="text-gray-300 text-sm mt-2">
+        <p className="text-gray-300 text-sm">
           Question {questionIndex + 1} / {questionArray.length}
         </p>
-        <p className="text-gray-300 text-sm mt-2">
+        <p className="text-gray-300 text-sm">
           Score: {totalCorrect} / {totalAnswered}
         </p>
       </div>
+
       <div className="mb-10">
-        <div className="w-full bg-gray-700 rounded-full h-2.5">
-          <div
-            className="bg-blue-600 h-2.5 rounded-full"
-            style={{ width: `${progressPercentage}%` }}
-          ></div>
-        </div>
+        <ProgressBar percentage={progressPercentage} />
       </div>
 
-      {/* Question Component */}
+      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
       {questions[questionIndex] && (
         <Question
           question={questions[questionIndex]}
@@ -102,33 +150,32 @@ export default function QuestionModule({
         />
       )}
 
-      {/* Navigation  */}
-      {/* {hasAnswered && ( */}
       <div className="flex justify-between w-full mt-5 px-0">
-        <button
+        <Button
           onClick={handlePrevious}
           disabled={questionIndex === 0}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400 transition-colors duration-200"
+          variant="icon"
         >
           <ChevronLeftIcon className="h-6 w-6" />
-        </button>
-        {totalAnswered === questionArray.length && (
-          <button
-            onClick={handleRetry}
-            className="px-4 py-2 text-white rounded disabled:bg-gray-400 transition-colors duration-200"
-          >
-            <ArrowPathIcon className="h-6 w-6" /> Redo
-          </button>
+        </Button>
+
+        {allAnswered && (
+          <Button onClick={handleRetry} className="flex items-center gap-1">
+            <ArrowPathIcon className="h-5 w-5" />
+            Redo
+          </Button>
         )}
-        <button
+
+        <Button
           onClick={handleNext}
           disabled={questionIndex === questionArray.length - 1}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400 transition-colors duration-200"
+          variant="icon"
         >
           <ChevronRightIcon className="h-6 w-6" />
-        </button>
+        </Button>
       </div>
-      {/* )} */}
     </div>
   );
-}
+};
+
+export default QuestionModule;
