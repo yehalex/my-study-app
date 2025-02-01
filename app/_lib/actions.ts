@@ -9,8 +9,8 @@ import {
   insertProblem,
   updateProblemInDB,
   deleteProblemFromDB,
-  getQuestionProgress,
   updateQuestionProgress,
+  updateQuestionProgressBatch,
 } from "./data-service";
 import { revalidatePath } from "next/cache";
 
@@ -54,22 +54,16 @@ export async function updateProgress(
   problemID: number,
   answer: string
 ) {
+  return updateProgressBatch(userID, subjectID, { [problemID]: answer });
+}
+
+export async function updateProgressBatch(
+  userID: number,
+  subjectID: number,
+  newAnswers: Record<number, string>
+) {
   try {
-    const existingProgress = await getQuestionProgress(userID, subjectID);
-
-    if (!existingProgress || !existingProgress[0]) {
-      throw new Error("Progress not found");
-    }
-
-    const currentProgress = existingProgress[0].progress || {};
-    const updatedProgress = {
-      progress: {
-        ...currentProgress,
-        [problemID]: answer,
-      },
-    };
-
-    await updateQuestionProgress(userID, subjectID, updatedProgress);
+    await updateQuestionProgressBatch(userID, subjectID, newAnswers);
     revalidatePath(`/problems/${subjectID}`);
     return { success: true };
   } catch (error) {

@@ -12,13 +12,15 @@ import ProgressBar from "./ProgressBar";
 import Button from "../Button";
 import { QuestionProps } from "@/types/Question";
 import { QuestionModuleProps } from "@/types/QuestionModule";
-import { updateProgress, resetProgress } from "@/app/_lib/actions";
+import { updateProgressBatch, resetProgress } from "@/app/_lib/actions";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ArrowPathIcon,
+  CloudArrowUpIcon,
 } from "@heroicons/react/24/solid";
 import useKeyboardNavigation from "@/app/hooks/useKeyboardNavigation";
+import useProgressSaver from "@/app/hooks/useProgressSaver";
 
 const QuestionModule = ({
   questionArray,
@@ -28,8 +30,13 @@ const QuestionModule = ({
 }: QuestionModuleProps) => {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [questions, setQuestions] = useState<QuestionProps[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const updateTimeoutRef = useRef<NodeJS.Timeout>();
+  const [localError, setLocalError] = useState<string | null>(null);
+  const {
+    queueUpdate,
+    flush,
+    error: saveError,
+  } = useProgressSaver(userID, subjectID);
+  const initialLoad = useRef(true);
 
   // Derived state
   const totalAnswered = useMemo(
@@ -47,22 +54,38 @@ const QuestionModule = ({
     [questions]
   );
 
+  // useEffect(() => {
+  //   const newQuestions = questionArray.map((question) => ({
+  //     ...question,
+  //     selectedAnswer: progress?.progress?.[question.id] || null,
+  //   }));
+
+  //   const firstUnansweredIndex = newQuestions.findIndex(
+  //     (q) => q.selectedAnswer === null
+  //   );
+
+  //   setQuestions(newQuestions);
+  //   setQuestionIndex(firstUnansweredIndex === -1 ? 0 : firstUnansweredIndex);
+  // }, [questionArray, progress]);
   useEffect(() => {
-    const newQuestions = questionArray.map((question) => ({
-      ...question,
-      selectedAnswer: progress?.progress?.[question.id] || null,
-    }));
+    if (initialLoad.current) {
+      const newQuestions = questionArray.map((question) => ({
+        ...question,
+        selectedAnswer: progress?.progress?.[question.id] || null,
+      }));
 
-    const firstUnansweredIndex = newQuestions.findIndex(
-      (q) => q.selectedAnswer === null
-    );
+      const firstUnansweredIndex = newQuestions.findIndex(
+        (q) => q.selectedAnswer === null
+      );
 
-    setQuestions(newQuestions);
-    setQuestionIndex(firstUnansweredIndex === -1 ? 0 : firstUnansweredIndex);
-  }, [questionArray, progress]);
+      setQuestions(newQuestions);
+      setQuestionIndex(firstUnansweredIndex === -1 ? 0 : firstUnansweredIndex);
+      initialLoad.current = false;
+    }
+  }, [questionArray, progress?.progress]);
 
   const handleAnswered = useCallback(
-    async (answeredCorrectly: boolean, answer: string) => {
+    (answeredCorrectly: boolean, answer: string) => {
       const currentQuestion = questions[questionIndex];
       const updatedQuestions = [...questions];
       updatedQuestions[questionIndex] = {
@@ -71,55 +94,49 @@ const QuestionModule = ({
       };
       setQuestions(updatedQuestions);
 
-      if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+      // Queue the batch update
+      queueUpdate(currentQuestion.id, answer);
 
-      updateTimeoutRef.current = setTimeout(async () => {
-        try {
-          const result = await updateProgress(
-            userID,
-            subjectID,
-            currentQuestion.id,
-            answer
-          );
-
-          if (!result.success) throw new Error("Failed to update progress");
-        } catch (err) {
-          setError("Failed to save progress");
-          const rollbackQuestions = [...questions];
-          rollbackQuestions[questionIndex] = {
-            ...currentQuestion,
-            selectedAnswer: null,
-          };
-          setQuestions(rollbackQuestions);
-        }
-      }, 500);
+      // Immediate save if last question
+      if (questionIndex === questionArray.length - 1) {
+        flush().catch(() => setLocalError("Failed to save final answer"));
+      }
     },
-    [questionIndex, questions, subjectID, userID]
+    [questionIndex, questions, queueUpdate, flush, questionArray.length]
   );
 
-  const handleNext = useCallback(
-    () =>
-      setQuestionIndex((prev) => Math.min(prev + 1, questionArray.length - 1)),
-    [questionArray.length]
+  const handleNavigation = useCallback(
+    async (direction: "next" | "previous") => {
+      try {
+        await flush();
+        setQuestionIndex((prev) =>
+          direction === "next"
+            ? Math.min(prev + 1, questionArray.length - 1)
+            : Math.max(prev - 1, 0)
+        );
+      } catch (error) {
+        setLocalError("Failed to save progress before navigation");
+      }
+    },
+    [flush, questionArray.length]
   );
 
-  const handlePrevious = useCallback(
-    () => setQuestionIndex((prev) => Math.max(prev - 1, 0)),
-    []
+  useKeyboardNavigation(
+    () => handleNavigation("previous"),
+    () => handleNavigation("next")
   );
-
-  useKeyboardNavigation(handlePrevious, handleNext);
 
   const handleRetry = async () => {
     try {
+      await flush();
       const result = await resetProgress(userID, subjectID);
       if (!result.success) throw new Error("Failed to reset progress");
 
-      setQuestions((prev) => prev.map((q) => ({ ...q, selectedAnswer: null })));
+      setQuestions(questionArray.map((q) => ({ ...q, selectedAnswer: null })));
       setQuestionIndex(0);
-      setError(null);
-    } catch (err) {
-      setError("Failed to reset progress");
+      setLocalError(null);
+    } catch (error) {
+      setLocalError("Failed to reset progress");
     }
   };
 
@@ -141,7 +158,9 @@ const QuestionModule = ({
         <ProgressBar percentage={progressPercentage} />
       </div>
 
-      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+      {(localError || saveError) && (
+        <p className="text-red-500 text-sm mb-4">{localError || saveError}</p>
+      )}
 
       {questions[questionIndex] && (
         <Question
@@ -152,22 +171,26 @@ const QuestionModule = ({
 
       <div className="flex justify-between w-full mt-5 px-0">
         <Button
-          onClick={handlePrevious}
+          onClick={() => handleNavigation("previous")}
           disabled={questionIndex === 0}
           variant="icon"
         >
           <ChevronLeftIcon className="h-6 w-6" />
         </Button>
 
-        {allAnswered && (
+        {allAnswered ? (
           <Button onClick={handleRetry} className="flex items-center gap-1">
             <ArrowPathIcon className="h-5 w-5" />
             Redo
           </Button>
+        ) : (
+          <Button onClick={flush} variant="icon">
+            <CloudArrowUpIcon className="h-5 w-5" />
+          </Button>
         )}
 
         <Button
-          onClick={handleNext}
+          onClick={() => handleNavigation("next")}
           disabled={questionIndex === questionArray.length - 1}
           variant="icon"
         >
