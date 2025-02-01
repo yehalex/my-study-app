@@ -55,19 +55,6 @@ export async function insertProblem(newProblem: {}) {
   return data;
 }
 
-export async function getSubjects() {
-  let { data: subjects, error } = await supabase
-    .from("subjects")
-    .select("*")
-    .order("subject", { ascending: true });
-
-  if (error) {
-    console.error(error);
-  }
-
-  return subjects;
-}
-
 export async function getUser(email: string) {
   const { data, error } = await supabase
     .from("users")
@@ -180,6 +167,66 @@ export async function updateQuestionProgressBatch(
   if (error) {
     console.error("Batch update error:", error);
     throw new Error(`Failed to save progress: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function getSubjects(ownerID: number) {
+  let { data: subjects, error } = await supabase
+    .from("subjects")
+    .select("*")
+    .contains("subject_owner_ids", [ownerID])
+    .order("subject", { ascending: true });
+
+  if (error) {
+    console.error(error);
+  }
+
+  return subjects;
+}
+
+export async function insertSubject(newSubject: {
+  subject: string;
+  subject_owner_ids: number[];
+}) {
+  const { data, error } = await supabase
+    .from("subjects")
+    .insert([newSubject])
+    .select();
+
+  if (error) {
+    console.error(error);
+    throw new Error("Subject cannot be created");
+  }
+
+  return data;
+}
+
+export async function updateSubjectInDB(subject: {
+  id: number;
+  subject: string;
+  subject_owner_ids: number[];
+}) {
+  const { data, error } = await supabase
+    .from("subjects")
+    .update({ subject: subject.subject })
+    .eq("id", subject.id);
+
+  if (error) {
+    console.error(error);
+    throw new Error("Subject cannot be updated");
+  }
+
+  return data;
+}
+
+export async function deleteSubjectFromDB(id: number) {
+  const { data, error } = await supabase.from("subjects").delete().eq("id", id);
+
+  if (error) {
+    console.error(error);
+    throw new Error("Subject cannot be deleted");
   }
 
   return data;

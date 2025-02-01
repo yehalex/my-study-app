@@ -1,8 +1,8 @@
 import Card from "../_components/Card";
-import { getSubjects, getProblemCount } from "../_lib/data-service";
+import { getCurrentUserSubjects } from "../_lib/data-helpers";
 
 export default async function Problems() {
-  const subjects = await getSubjects();
+  const subjects = await getCurrentUserSubjects();
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">

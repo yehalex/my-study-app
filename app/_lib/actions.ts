@@ -11,8 +11,12 @@ import {
   deleteProblemFromDB,
   updateQuestionProgress,
   updateQuestionProgressBatch,
+  insertSubject,
+  updateSubjectInDB,
+  deleteSubjectFromDB,
 } from "./data-service";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "./session";
 
 export async function signInAction() {
   await signIn("google", { redirectTo: "/" });
@@ -83,6 +87,48 @@ export async function resetProgress(userID: number, subjectID: number) {
     return { success: true };
   } catch (error) {
     console.error("Error resetting progress:", error);
+    return { success: false, error };
+  }
+}
+
+export async function createSubject(subject: string) {
+  try {
+    const user = await getCurrentUser();
+    const result = await insertSubject({
+      subject: subject,
+      subject_owner_ids: [user.id],
+    });
+
+    revalidatePath("/problems/subjects");
+    return { success: true };
+  } catch (error) {
+    console.error("Error creating subject:", error);
+    return { success: false, error };
+  }
+}
+
+export async function updateSubject(subject: {
+  id: number;
+  subject: string;
+  subject_owner_ids: number[];
+}) {
+  try {
+    const result = await updateSubjectInDB(subject);
+    revalidatePath("/problems/subjects");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating subject:", error);
+    return { success: false, error };
+  }
+}
+
+export async function deleteSubject(id: number) {
+  try {
+    const result = await deleteSubjectFromDB(id);
+    revalidatePath("/problems/subjects");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting subject:", error);
     return { success: false, error };
   }
 }

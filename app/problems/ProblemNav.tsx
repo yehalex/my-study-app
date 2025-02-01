@@ -25,7 +25,15 @@ export default async function ProblemNav() {
             href="/problems/manage"
             className="hover:text-gray-400 transition-colors"
           >
-            Manage
+            Manage Questions
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/problems/subjects"
+            className="hover:text-gray-400 transition-colors"
+          >
+            Manage Subjects
           </Link>
         </li>
       </ul>
