@@ -164,3 +164,23 @@ export async function updateQuestionProgress(
 
   return data;
 }
+
+export async function updateQuestionProgressBatch(
+  userID: number,
+  subjectID: number,
+  newAnswers: Record<number, string>
+) {
+  // Use PostgreSQL's jsonb_set in a transaction
+  const { data, error } = await supabase.rpc("update_progress_batch", {
+    p_user_id: userID,
+    p_subject_id: subjectID,
+    p_new_answers: newAnswers,
+  });
+
+  if (error) {
+    console.error("Batch update error:", error);
+    throw new Error(`Failed to save progress: ${error.message}`);
+  }
+
+  return data;
+}
