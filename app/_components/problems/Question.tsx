@@ -76,7 +76,9 @@ export default function Question({
       {question.selectedAnswer !== null && question.explanation && (
         <div className="mt-4 p-4 bg-gray-600 rounded-lg">
           <h5 className="font-semibold mb-2">Explanation:</h5>
-          <p className="text-gray-200">{question.explanation}</p>
+          <p className="text-gray-200 whitespace-pre-wrap">
+            {question.explanation}
+          </p>
         </div>
       )}
     </div>
